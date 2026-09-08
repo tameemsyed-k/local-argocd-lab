@@ -6,7 +6,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/pathnex/pathnex-argocd_lab.git'
+    repoURL: 'https://github.com/tameemsyed-k/local-argocd-lab.git'
+    #repoURL: 'https://github.com/pathnex/pathnex-argocd_lab.git'
     targetRevision: main
     path: grafana
     helm:

@@ -1,104 +1,130 @@
-# NOTE: Ensure that your EKS cluster is up and running before proceeding (Bastion host as well)
+# 🚀 ArgoCD & GitOps Lab (Local Kubernetes Environment)
 
-🔧 1. Install kubectl in Bastion host
-# official binary – recommended
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+Welcome to the **Local ArgoCD GitOps Lab**! This repository contains declarative ArgoCD `Application` Custom Resource Definitions (CRDs) and custom Helm charts to deploy **Nginx** and **Grafana** workloads onto a local Kubernetes cluster using GitOps continuous delivery.
 
-# Make it executable:
-chmod +x kubectl
+---
 
-# Move it to PATH:
-sudo mv kubectl /usr/local/bin/
+## 📌 Repository Overview
 
-# Verify:
-kubectl version --client
+- **Repository**: [`https://github.com/tameemsyed-k/local-argocd-lab.git`](https://github.com/tameemsyed-k/local-argocd-lab.git)
+- **Target Cluster**: Local Kubernetes (Minikube, Kind, K3s, or Docker Desktop K8s)
+- **ArgoCD Control Namespace**: `argocd`
 
-🔧 2. Install Git
-sudo yum install git -y
+### 📂 Directory Structure
+```text
+.
+├── argo-apps/
+│   ├── pathnex-nginx-argo-app.yaml     # ArgoCD Application manifest for Nginx
+│   └── pathnex-grafana-argo-app.yaml   # ArgoCD Application manifest for Grafana
+├── grafana/                             # Custom Grafana Helm Chart (persistence & values)
+├── nginx/                               # Custom Nginx Helm Chart (deployment & service)
+└── Readme.md                            # Documentation
+```
 
-🔧 3. Install kubectx (and kubens)
-git clone https://github.com/ahmetb/kubectx.git ~/.kubectx
+---
 
-# Add to PATH:
-sudo ln -s ~/.kubectx/kubectx /usr/local/bin/kubectx
-sudo ln -s ~/.kubectx/kubens /usr/local/bin/kubens
+## 🛠️ Step-by-Step Execution Guide
 
-# Verify:
-kubectx (It will not show anything as it is not conected to eks yet)
-kubens  (It will not show anything as it is not conected to eks yet)
+### Step 1: Install & Verify ArgoCD
+1. Create the dedicated `argocd` namespace:
+   ```bash
+   kubectl create namespace argocd
+   ```
+2. Install ArgoCD:
+   ```bash
+   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+   ```
+3. Verify all ArgoCD microservice pods are `Running`:
+   ```bash
+   kubectl get pods -n argocd
+   ```
 
+---
 
-🧪 4. Configure Access (Important)
-Create an "Access key" for your user in AWS
-Go to IAM -> Users -> SELECT_YOUR_USER  -> Security credentials -> Access keys -> Create access key
+### Step 2: Access ArgoCD & Retrieve Credentials
+1. Decode the initial `admin` password:
+   ```bash
+   kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d && echo ""
+   ```
+2. Forward the ArgoCD web server port to your local machine:
+   ```bash
+   kubectl port-forward service/argocd-server -n argocd 8080:443
+   ```
+3. Open your browser: **[https://localhost:8080](https://localhost:8080)**
+   - **Username**: `admin`
+   - **Password**: *(Decoded password from step 1)*
 
-# Now in Ec2, configure: AWS Account setup
-Aws configure
+---
 
-# Provide:
-AWS Access Key ID
-AWS Secret Access Key
-Region
+### Step 3: Local Environment Manifest Adaptations
 
-# Add EKS cluster to Kubectx
-aws eks update-kubeconfig --region <region> --name <cluster-name>
+The manifests in `argo-apps/` are configured to bridge this Git repo with your local cluster:
 
-# Install Helm (official script)
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+#### 1. ArgoCD Control Namespace
+Set `metadata.namespace: argocd` so ArgoCD can discover the Application objects.
 
-✅ Expose Argo CD with LoadBalancer
+#### 2. Local Helm Overrides (`argo-apps/pathnex-grafana-argo-app.yaml`)
+Overridden cloud settings directly inside the ArgoCD Application manifest:
+- **`persistence.storageClass: local-path`** (Uses local volume provisioner instead of AWS `gp2`).
+- **`service.type: NodePort`** (Accessible locally without AWS LoadBalancers).
+- **`replicaCount: 1`** (Matches ReadWriteOnce single-mount PVC access mode).
 
-🚀 Step 1: Create the namespace manually
-kubectl create namespace argocd
+---
 
-🚀 Step 2: Install Argo CD (you already did / will do)
-kubectl create -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+### Step 4: Create Destination Namespaces & Deploy Apps
 
+1. Create target workload namespaces:
+   ```bash
+   kubectl create namespace pathnex-nginx
+   kubectl create namespace pathnex-grafana-monitoring
+   ```
+2. Apply the ArgoCD Application manifests:
+   ```bash
+   kubectl apply -f argo-apps/ -n argocd
+   ```
+3. Verify application sync & health status:
+   ```bash
+   kubectl get application -n argocd
+   ```
 
-# Note: You need to patch the service after installation. So that can access the url via internet
-🚀 Step 3: Change service to LoadBalancer
-kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+---
 
-⏳ Step 4: Wait for External IP
-kubectl get svc argocd-server -n argocd
+### Step 5: Verify Workloads in Kubernetes
 
-# You’ll see something like:
-NAME             TYPE           EXTERNAL-IP
-argocd-server    LoadBalancer   <pending>
+- **Nginx Pods & Service**:
+  ```bash
+  kubectl get pods,svc -n pathnex-nginx
+  ```
+- **Grafana Pods, Service & PVC**:
+  ```bash
+  kubectl get pods,svc,pvc -n pathnex-grafana-monitoring
+  ```
 
-# After a bit:
-EXTERNAL-IP: a1b2c3d4***************.elb.amazonaws.com # It takes some time to load into UI
+---
 
-⏳ Step 5: Open the Above URL
-# Username for ArgoCD App
-admin
+### Step 6: Test GitOps Workflows & Self-Healing
 
-# Get password for ArgoCD App
-kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d
+#### A. Trigger Automated Self-Healing
+Manually delete pods in Kubernetes to observe ArgoCD automatically repair the cluster back to match Git:
+```bash
+kubectl delete pod -n pathnex-nginx --all
+```
 
-⏳ Step 6:
-# Argo CD will handle Helm automatically, To install both Apps
+#### B. Continuous Delivery Workflow
+1. Make a local code change (e.g. modify replica count in `nginx/values.yaml`).
+2. Commit & push to GitHub:
+   ```bash
+   git commit -am "Update nginx deployment configuration"
+   git push
+   ```
+3. Watch ArgoCD detect the GitHub commit and update your cluster live!
 
-# Create namespaces manually for Nginx and Grafana app
-kubectl create namespace pathnex-nginx
-kubectl create namespace pathnex-grafana-monitoring
+---
 
-# Make sure to present in "ArgoCd_lab" folder
-kubectl apply -f argo-apps/      
+## 🧹 Cleanup Instructions
 
-# Sample of the output, These EXTERNAL-IP will be used to login to argocd, grafana and nginx. (Your values will be different)
-
-kubectl get svc -A
-NAMESPACE      NAME                                      TYPE           CLUSTER-IP       EXTERNAL-IP
-argocd         argocd-server                             LoadBalancer   172.20.233.130   a15e3a35b978f4cd4bcb080971df360e-523335367.ap-south-1.elb.amazonaws.com    80:31412/TCP,443:32045/TCP   10m                                                               443/TCP                      4h7m
-monitoring     pathnex-grafana-service                   LoadBalancer   172.20.95.153    aa32e4bf413644023a0e7630754be889-1022658738.ap-south-1.elb.amazonaws.com   80:31011/TCP                 6m56s
-pathnex        pathnex-nginx-service                     LoadBalancer   172.20.156.215   a85c1db8575934cf782e2e0ba1eef0aa-1472485196.ap-south-1.elb.amazonaws.com   80:31425/TCP                 14m
-
-
-#  Only If Needed, Run below command to force sync the ArgoCD after making a change.
-kubectl patch application pathnex-nginx -n argocd   --type merge   -p '{"operation":{"sync":{}}}'
-
-# After completion, To delete the namespace and its resources 
-kubectl delete namespace pathnex-grafana-monitoring pathnex-nginx argocd
-
-# Note: Don't forget to delete the EKS cluster and bastion host after the lab.
+To remove lab applications and workload namespaces:
+```bash
+kubectl delete application pathnex-nginx pathnex-grafana -n argocd
+kubectl delete namespace pathnex-nginx pathnex-grafana-monitoring
+```

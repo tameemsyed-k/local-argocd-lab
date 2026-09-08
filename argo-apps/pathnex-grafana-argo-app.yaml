@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pathnex-grafana
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/pathnex/pathnex-argocd_lab.git'
+    targetRevision: main
+    path: grafana
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: "persistence.storageClass"
+          value: "local-path"
+        - name: "service.type"
+          value: "NodePort"
+        - name: "replicaCount"
+          value: "1"
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: pathnex-grafana-monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

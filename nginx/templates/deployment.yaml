@@ -23,10 +23,12 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              cat << 'HTML' > /usr/share/nginx/html/index.html
+              POD_NAME=$(hostname)
+              cat << HTML > /usr/share/nginx/html/index.html
               <!DOCTYPE html>
               <html>
               <head>
+                  <meta charset="UTF-8">
                   <title>Kubernetes Load Balancing Demo</title>
                   <style>
                       body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; padding-top: 60px; margin: 0; }
@@ -42,7 +44,7 @@ spec:
                       <div class="badge">GitOps Live Deployment</div>
                       <h1>🚀 ArgoCD Load Balancer Demo</h1>
                       <p>This HTTP request was served by Kubernetes Pod:</p>
-                      <div class="pod-box">POD: $HOSTNAME</div>
+                      <div class="pod-box">POD: ${POD_NAME}</div>
                       <p style="margin-top: 30px; font-size: 0.9rem; color: #64748b;">
                           🔄 <b>Refresh your browser</b> to see Kubernetes Service distribute traffic across replica pods!
                       </p>

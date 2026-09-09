@@ -1,4 +1,4 @@
-replicaCount: 5
+replicaCount: 3
 
 image:
   repository: nginx
@@ -6,7 +6,7 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: NodePort
+  type: LoadBalancer
   port: 80
   targetPort: 80
   name: nginx-service

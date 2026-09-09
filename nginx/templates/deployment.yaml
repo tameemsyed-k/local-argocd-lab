@@ -20,3 +20,34 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.targetPort }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              cat << 'HTML' > /usr/share/nginx/html/index.html
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>Kubernetes Load Balancing Demo</title>
+                  <style>
+                      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; padding-top: 60px; margin: 0; }
+                      .container { background: #1e293b; display: inline-block; padding: 40px 50px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); border: 1px solid #334155; max-width: 500px; }
+                      h1 { color: #38bdf8; margin-bottom: 10px; font-size: 2rem; }
+                      p { color: #94a3b8; font-size: 1rem; margin-bottom: 25px; }
+                      .pod-box { background: #022c22; border: 1px solid #166534; padding: 15px 20px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 1.2rem; color: #4ade80; display: inline-block; font-weight: bold; }
+                      .badge { background: #0284c7; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: inline-block; margin-bottom: 20px; }
+                  </style>
+              </head>
+              <body>
+                  <div class="container">
+                      <div class="badge">GitOps Live Deployment</div>
+                      <h1>🚀 ArgoCD Load Balancer Demo</h1>
+                      <p>This HTTP request was served by Kubernetes Pod:</p>
+                      <div class="pod-box">POD: $HOSTNAME</div>
+                      <p style="margin-top: 30px; font-size: 0.9rem; color: #64748b;">
+                          🔄 <b>Refresh your browser</b> to see Kubernetes Service distribute traffic across replica pods!
+                      </p>
+                  </div>
+              </body>
+              </html>
+              HTML
+              exec nginx -g 'daemon off;'

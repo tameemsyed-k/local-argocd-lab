@@ -1,13 +1,12 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pathnex-grafana
+  name: grafana-app
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: 'https://github.com/tameemsyed-k/local-argocd-lab.git'
-    #repoURL: 'https://github.com/pathnex/pathnex-argocd_lab.git'
     targetRevision: main
     path: grafana
     helm:
@@ -22,7 +21,7 @@ spec:
           value: "1"
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: pathnex-grafana-monitoring
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true

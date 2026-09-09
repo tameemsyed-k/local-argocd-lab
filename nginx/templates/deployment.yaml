@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pathnex-nginx
+  name: nginx-deployment
   labels:
-    app: pathnex-nginx
+    app: nginx
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: pathnex-nginx
+      app: nginx
   template:
     metadata:
       labels:
-        app: pathnex-nginx
+        app: nginx
     spec:
       containers:
-        - name: pathnex-nginx
+        - name: nginx
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:

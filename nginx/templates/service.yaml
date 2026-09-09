@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: {{ .Values.service.name }}
   labels:
-    app: pathnex-nginx
+    app: nginx
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: pathnex-nginx
+    app: nginx
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}

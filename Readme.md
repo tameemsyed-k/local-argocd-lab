@@ -1,4 +1,4 @@
-# 🚀 ArgoCD & GitOps Lab (Local Kubernetes Environment)
+# �� ArgoCD & GitOps Lab (Local Kubernetes Environment)
 
 Welcome to the **Local ArgoCD GitOps Lab**! This repository contains declarative ArgoCD `Application` Custom Resource Definitions (CRDs) and custom Helm charts to deploy **Nginx** and **Grafana** workloads onto a local Kubernetes cluster using GitOps continuous delivery.
 
@@ -14,11 +14,11 @@ Welcome to the **Local ArgoCD GitOps Lab**! This repository contains declarative
 ```text
 .
 ├── argo-apps/
-│   ├── pathnex-nginx-argo-app.yaml     # ArgoCD Application manifest for Nginx
-│   └── pathnex-grafana-argo-app.yaml   # ArgoCD Application manifest for Grafana
-├── grafana/                             # Custom Grafana Helm Chart (persistence & values)
-├── nginx/                               # Custom Nginx Helm Chart (deployment & service)
-└── Readme.md                            # Documentation
+│   ├── nginx-app.yaml                 # ArgoCD Application manifest for Nginx
+│   └── grafana-app.yaml               # ArgoCD Application manifest for Grafana
+├── grafana/                            # Custom Grafana Helm Chart (deployment, service, pvc)
+├── nginx/                              # Custom Nginx Helm Chart (deployment, service)
+└── Readme.md                           # Lab Documentation
 ```
 
 ---
@@ -58,12 +58,12 @@ Welcome to the **Local ArgoCD GitOps Lab**! This repository contains declarative
 
 ### Step 3: Local Environment Manifest Adaptations
 
-The manifests in `argo-apps/` are configured to bridge this Git repo with your local cluster:
+The manifests in `argo-apps/` bridge this Git repo with your local cluster:
 
 #### 1. ArgoCD Control Namespace
 Set `metadata.namespace: argocd` so ArgoCD can discover the Application objects.
 
-#### 2. Local Helm Overrides (`argo-apps/pathnex-grafana-argo-app.yaml`)
+#### 2. Local Helm Overrides (`argo-apps/grafana-app.yaml`)
 Overridden cloud settings directly inside the ArgoCD Application manifest:
 - **`persistence.storageClass: local-path`** (Uses local volume provisioner instead of AWS `gp2`).
 - **`service.type: NodePort`** (Accessible locally without AWS LoadBalancers).
@@ -75,8 +75,8 @@ Overridden cloud settings directly inside the ArgoCD Application manifest:
 
 1. Create target workload namespaces:
    ```bash
-   kubectl create namespace pathnex-nginx
-   kubectl create namespace pathnex-grafana-monitoring
+   kubectl create namespace web-apps
+   kubectl create namespace monitoring
    ```
 2. Apply the ArgoCD Application manifests:
    ```bash
@@ -93,11 +93,11 @@ Overridden cloud settings directly inside the ArgoCD Application manifest:
 
 - **Nginx Pods & Service**:
   ```bash
-  kubectl get pods,svc -n pathnex-nginx
+  kubectl get pods,svc -n web-apps
   ```
 - **Grafana Pods, Service & PVC**:
   ```bash
-  kubectl get pods,svc,pvc -n pathnex-grafana-monitoring
+  kubectl get pods,svc,pvc -n monitoring
   ```
 
 ---
@@ -107,7 +107,7 @@ Overridden cloud settings directly inside the ArgoCD Application manifest:
 #### A. Trigger Automated Self-Healing
 Manually delete pods in Kubernetes to observe ArgoCD automatically repair the cluster back to match Git:
 ```bash
-kubectl delete pod -n pathnex-nginx --all
+kubectl delete pod -n web-apps --all
 ```
 
 #### B. Continuous Delivery Workflow
@@ -125,6 +125,6 @@ kubectl delete pod -n pathnex-nginx --all
 
 To remove lab applications and workload namespaces:
 ```bash
-kubectl delete application pathnex-nginx pathnex-grafana -n argocd
-kubectl delete namespace pathnex-nginx pathnex-grafana-monitoring
+kubectl delete application nginx-app grafana-app -n argocd
+kubectl delete namespace web-apps monitoring
 ```

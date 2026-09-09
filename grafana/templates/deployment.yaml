@@ -1,45 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pathnex-grafana
+  name: grafana-deployment
   labels:
-    app: pathnex-grafana
+    app: grafana
 spec:
   replicas: {{ .Values.replicaCount }}
-
   selector:
     matchLabels:
-      app: pathnex-grafana
-
+      app: grafana
   template:
     metadata:
       labels:
-        app: pathnex-grafana
-
+        app: grafana
     spec:
       securityContext:
         fsGroup: 472
-
       containers:
-        - name: pathnex-grafana
+        - name: grafana
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-
           ports:
             - containerPort: {{ .Values.service.targetPort }}
-
-          env:
-            - name: GF_SECURITY_ADMIN_USER
-              value: "{{ .Values.adminUser }}"
-
-            - name: GF_SECURITY_ADMIN_PASSWORD
-              value: "{{ .Values.adminPassword }}"
-
           volumeMounts:
             - name: grafana-storage
               mountPath: /var/lib/grafana
-
       volumes:
         - name: grafana-storage
           persistentVolumeClaim:
-            claimName: pathnex-grafana-pvc
+            claimName: grafana-pvc

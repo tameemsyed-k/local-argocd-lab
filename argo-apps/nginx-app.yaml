@@ -1,13 +1,12 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pathnex-nginx
+  name: nginx-app
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: 'https://github.com/tameemsyed-k/local-argocd-lab.git'
-    #repoURL: 'https://github.com/pathnex/pathnex-argocd_lab.git'
     targetRevision: main
     path: nginx
     helm:
@@ -15,7 +14,7 @@ spec:
         - values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: pathnex-nginx
+    namespace: web-apps
   syncPolicy:
     automated:
       prune: true

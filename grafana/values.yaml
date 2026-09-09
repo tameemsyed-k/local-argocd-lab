@@ -6,10 +6,10 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: NodePort          # Exposing Grafana to the internet
-  name: pathnex-grafana-service
-  port: 80                    # External port exposed by the service
-  targetPort: 3000            # The port Grafana is running on inside the container
+  type: NodePort
+  name: grafana-service
+  port: 80
+  targetPort: 3000
 
 persistence:
   enabled: true
